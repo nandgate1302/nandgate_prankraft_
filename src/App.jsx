@@ -158,7 +158,7 @@ function App() {
 
                 <div className="flex flex-col sm:flex-row gap-4 w-full sm:w-auto">
                   <a
-                    href="https://github.com/your-username/Prankraft" // Update with your actual repo
+                    href="https://github.com/nandgate1302/nandgate_prankraft_"
                     target="_blank"
                     rel="noreferrer"
                     className="flex-1 sm:flex-none px-6 py-3 bg-zinc-800 hover:bg-zinc-700 text-white rounded-lg flex items-center justify-center gap-2 transition-colors font-medium border border-zinc-700"
