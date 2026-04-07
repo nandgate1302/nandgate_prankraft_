@@ -1,21 +1,65 @@
-import { useState, useRef, useEffect } from 'react';
+import { useState, useRef, useEffect, useCallback } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import Login from './components/Login';
 import Captcha from './components/Captcha';
 import AwSnap from './components/AwSnap';
+import NotFound from './components/NotFound';
 
 function App() {
   const [phase, setPhase] = useState(1);
   const [climaxStarted, setClimaxStarted] = useState(false);
   const [rickrollFinished, setRickrollFinished] = useState(false);
+  const [captchaReady, setCaptchaReady] = useState(false);
+  const [isDimmed, setIsDimmed] = useState(false);
   const audioRef = useRef(null);
 
-  const playFaahSound = () => {
+  const playFaahSound = useCallback(() => {
+    if (navigator.vibrate) {
+      navigator.vibrate(200);
+    }
     if (audioRef.current) {
       audioRef.current.currentTime = 0;
       audioRef.current.play().catch(e => console.log('Audio blocked', e));
     }
-  };
+  }, []);
+
+  useEffect(() => {
+    let timeout;
+    const resetTimer = () => {
+      clearTimeout(timeout);
+      setIsDimmed(prevDimmed => {
+        if (prevDimmed && phase !== 4) {
+          playFaahSound();
+        }
+        return false;
+      });
+      timeout = setTimeout(() => setIsDimmed(true), 30000); // 30 seconds
+    };
+
+    timeout = setTimeout(() => setIsDimmed(true), 30000);
+
+    window.addEventListener('mousemove', resetTimer);
+    window.addEventListener('touchmove', resetTimer);
+    window.addEventListener('keydown', resetTimer);
+
+    return () => {
+      clearTimeout(timeout);
+      window.removeEventListener('mousemove', resetTimer);
+      window.removeEventListener('touchmove', resetTimer);
+      window.removeEventListener('keydown', resetTimer);
+    };
+  }, [phase, playFaahSound]);
+
+  useEffect(() => {
+    if (phase === 2) {
+      const timer = setTimeout(() => {
+        setCaptchaReady(true);
+      }, 2500); // 2.5 second buffering delay
+      return () => clearTimeout(timer);
+    } else {
+      setCaptchaReady(false);
+    }
+  }, [phase]);
 
   const startClimax = () => {
     setPhase(4);
@@ -34,8 +78,18 @@ function App() {
     setRickrollFinished(false);
   };
 
+  const isHome = window.location.pathname === '/' || window.location.pathname === '/index.html';
+  if (!isHome) {
+    return <NotFound />;
+  }
+
   return (
     <div className="w-full min-h-screen bg-[#09090b] font-sans flex items-center justify-center relative overflow-hidden">
+      {/* Inactivity Dim Overlay */}
+      <div 
+        className={`pointer-events-none fixed inset-0 z-[150] bg-black transition-opacity ${isDimmed && phase !== 4 ? 'opacity-90' : 'opacity-0'}`}
+        style={{ transitionDuration: isDimmed ? '5000ms' : '200ms' }}
+      />
 
       {/* Ambient background applied only to Phase 1 & 2 */}
       {phase < 3 && (
@@ -72,7 +126,34 @@ function App() {
             <h2 className="text-xl font-semibold mb-2">Pending Validation</h2>
             <p className="text-zinc-400 text-sm">Please verify you are human to access your dashboard.</p>
           </motion.div>
-          <Captcha onNext={() => setPhase(3)} playFaah={playFaahSound} />
+          
+          <div className="relative w-full max-w-sm flex flex-col items-center justify-start min-h-[450px]">
+            <AnimatePresence mode="wait">
+              {!captchaReady ? (
+                <motion.div
+                  key="buffering"
+                  initial={{ opacity: 0 }}
+                  animate={{ opacity: 1 }}
+                  exit={{ opacity: 0 }}
+                  transition={{ duration: 0.5 }}
+                  className="flex flex-col items-center justify-center absolute top-20 space-y-4"
+                >
+                  <div className="w-10 h-10 border-4 border-zinc-700 border-t-blue-500 rounded-full animate-spin" />
+                  <p className="text-zinc-400 text-sm animate-pulse">Establishing secure connection...</p>
+                </motion.div>
+              ) : (
+                <motion.div
+                  key="captcha"
+                  initial={{ opacity: 0, y: 20 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ duration: 1.5, ease: "easeOut" }}
+                  className="w-full flex justify-center"
+                >
+                  <Captcha onNext={() => setPhase(3)} playFaah={playFaahSound} />
+                </motion.div>
+              )}
+            </AnimatePresence>
+          </div>
         </div>
       )}
 

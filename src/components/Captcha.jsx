@@ -46,12 +46,12 @@ export default function Captcha({ onNext, playFaah }) {
     if (isCorrect) {
       // The "Success" Deception
       setCaptchaState('overqualified');
-      // Reset the puzzle after 4 seconds to force them into a loop
+      // Reset the puzzle after a short delay to force them into a loop
       setTimeout(() => {
         setCaptchaState('normal');
         setSelectedSquares(new Set());
         setGridOrder([...gridOrder].sort(() => Math.random() - 0.5)); // rescramble
-      }, 4000);
+      }, 1500);
     } else {
       // If they get it wrong (or give up and hit verify with standard rasas), we crash the app!
       onNext();
